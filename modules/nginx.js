@@ -1,6 +1,6 @@
 const nginx = require('express').Router();
 
-nginx.get('/', function (req, res, next) {
+nginx.get('/', function (req, res) {
     res.send("Nginx routes")
 });
 
