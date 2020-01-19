@@ -1,8 +1,53 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
+const axios = require('axios');
+
+const cfEmail = process.env.CLOUDFLARE_EMAIL;
+const cfApiKey = process.env.CLOUDFLARE_API_KEY;
+
+global.cfInstance = axios.create({
+    headers : {
+        post: {
+            "X-Auth-Email" : cfEmail,
+            "X-Auth-Key" : cfApiKey
+        },
+        get: {
+            "X-Auth-Email" : cfEmail,
+            "X-Auth-Key" : cfApiKey
+        }
+    }
+});
+
+const nginxRouter = require('./modules/nginx');
+const leRouter = require('./modules/letsencrypt');
+const subdomainsRouter = require('./modules/subdomains');
+const domainsRouter = require('./modules/domains');
+
+const getDurationInMilliseconds = (start) => {
+    const NS_PER_SEC = 1e9;
+    const NS_TO_MS = 1e6;
+    const diff = process.hrtime(start);
+
+    return (diff[0] * NS_PER_SEC + diff[1]) / NS_TO_MS;
+};
+
+app.use((req, res, next) => {
+    const start = process.hrtime();
+    res.on('finish', () => {
+        const durationInMilliseconds = getDurationInMilliseconds (start);
+        console.log(`${req.method} ${req.originalUrl} ${durationInMilliseconds .toLocaleString()} ms`);
+    });
+    next();
+});
 
 app.get('/', function (req, res){
-    res.send("Hello World!")
+    res.json({status: 1})
 });
+
+app.use('/api/nginx', nginxRouter);
+app.use('/api/certs', leRouter);
+app.use('/api/subdomains', subdomainsRouter);
+app.use('/api/domains', domainsRouter);
 
 app.listen(3000);
