@@ -2,6 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 const axios = require('axios');
+const lowdb = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
+global.shortid = require('shortid');
+
+const adapter = new FileSync('db.json');
+global.db = lowdb(adapter);
+
+db.defaults({domains: [], subdomains: [], certs: []}).write();
 
 const cfEmail = process.env.CLOUDFLARE_EMAIL;
 const cfApiKey = process.env.CLOUDFLARE_API_KEY;
