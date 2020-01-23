@@ -44,7 +44,7 @@ app.use((req, res, next) => {
     const start = process.hrtime();
     res.on('finish', () => {
         const durationInMilliseconds = getDurationInMilliseconds (start);
-        console.log(`${req.method} ${req.originalUrl} ${durationInMilliseconds .toLocaleString()} ms`);
+        console.log(`[${req.method}] ${res.statusCode} ${req.originalUrl} ${durationInMilliseconds .toLocaleString()} ms`);
     });
     next();
 });
