@@ -36,6 +36,20 @@ subdomains.get('/', function (req, res) {
     res.json(jsonReply);
 });
 
+subdomains.get('/list/:domain', function (req, res) {
+    if (db.get('domains').find({domain: req.params.domain}).value() !== undefined){
+        let jsonReply = {}, domainId = db.get('domains').find({domain: req.params.domain}).value()['id'];;
+        jsonReply["subdomains"] = [];
+        let subdomains = db.get('subdomains').filter({parent_domain_id: domainId}).value();
+        for (let i = 0; i < subdomains.length; i++) {
+            jsonReply["subdomains"].push({id: subdomains[i]['id'], subdomain: subdomains[i]['subdomain'], target: subdomains[i]['target'], type: subdomains[i]['type'], ignored: subdomains[i]['ignored']});
+        }
+        res.status(200).json(jsonReply);
+    } else {
+        res.status(404).json({response: "Unknown domain."});
+    }
+});
+
 subdomains.post('/refresh', function (req, res) {
     refreshSubdomains();
     res.sendStatus(200)
