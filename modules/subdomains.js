@@ -38,7 +38,7 @@ subdomains.get('/', function (req, res) {
 
 subdomains.get('/list/:domain', function (req, res) {
     if (db.get('domains').find({domain: req.params.domain}).value() !== undefined){
-        let jsonReply = {}, domainId = db.get('domains').find({domain: req.params.domain}).value()['id'];;
+        let jsonReply = {}, domainId = db.get('domains').find({domain: req.params.domain}).value()['id'];
         jsonReply["subdomains"] = [];
         let subdomains = db.get('subdomains').filter({parent_domain_id: domainId}).value();
         for (let i = 0; i < subdomains.length; i++) {
