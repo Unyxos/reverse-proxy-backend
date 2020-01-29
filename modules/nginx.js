@@ -1,7 +1,71 @@
 const nginx = require('express').Router();
+var fs = require('fs');
+var NginxConfFile = require('nginx-conf').NginxConfFile;
+const { exec } = require('child_process');
+var ConfigParser = require('@webantic/nginx-config-parser');
+var parser = new ConfigParser()
+
+function getAllHttpConfigs(){
+    let configs = [];
+    fs.readdirSync('./data/nginx-configs').forEach(file => {
+        configs.push(file);
+    });
+    return configs;
+}
 
 nginx.get('/', function (req, res) {
-    res.send("Nginx routes")
+    res.status(200).send("OK")
+});
+
+nginx.get('/config', function (req, res) {
+    let httpConfigs = getAllHttpConfigs();
+    res.sendStatus(200)
+});
+
+nginx.get('/config/:name', function (req, res) {
+    let name = req.params.name;
+    let httpConfigs = getAllHttpConfigs();
+    if (httpConfigs.includes("http-"+name+".conf")){
+        NginxConfFile.create('./data/nginx-configs/http-'+name+'.conf', function(err, conf) {
+            if (!err) {
+                res.status(200).json({config: conf.nginx._getString()})
+            } else {
+                console.log(err);
+                res.status(500).json({response: "Internal server error."})
+            }
+        });
+    } else {
+        res.status(404).json({response: "No configuration found for " + name});
+    }
+});
+
+nginx.post('/new', function (req, res) {
+    let {name, target, tcpPort} = req.body;
+    if (name !== undefined || target !== undefined){
+        fs.writeFile('./data/nginx-configs/http-'+name+'.conf', '', function (err) {
+           if (err){
+               res.status(500).json({response: "Couldn't create config file."})
+           }
+        });
+        NginxConfFile.create('./data/nginx-configs/http-'+name+'.conf', function(err, conf) {
+            if (!err) {
+                conf.nginx._add('server');
+                conf.nginx.server._add('listen', '80');
+                conf.nginx.server._add('server_name', name);
+                conf.nginx.server._add('location', '/');
+                conf.nginx.server.location._add('proxy_pass', 'http://'+target);
+                conf.flush();
+                exec('sudo /etc/init.d/nginx reload', (err, stdout, stderr) => {
+                    res.sendStatus(200)
+                });
+            } else {
+                console.log(err);
+                res.status(500).json({response: "Internal server error."})
+            }
+        });
+    } else {
+        res.status(400).json({response: "Missing one or more mandatory parameters."});
+    }
 });
 
 module.exports = nginx;

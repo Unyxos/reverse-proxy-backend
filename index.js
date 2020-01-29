@@ -6,11 +6,11 @@ const bodyParser = require('body-parser');
 const lowdb = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
 global.shortid = require('shortid');
-
 var multer = require('multer');
 var upload = multer();
+var fs = require('fs');
 
-const adapter = new FileSync('db.json');
+const adapter = new FileSync('./data/db.json');
 global.db = lowdb(adapter);
 
 db.defaults({domains: [], subdomains: [], certs: []}).write();
