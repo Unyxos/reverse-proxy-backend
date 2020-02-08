@@ -2,12 +2,18 @@ const nginx = require('express').Router();
 var fs = require('fs');
 var NginxConfFile = require('nginx-conf').NginxConfFile;
 const { exec } = require('child_process');
-var ConfigParser = require('@webantic/nginx-config-parser');
-var parser = new ConfigParser()
 
 function getAllHttpConfigs(){
     let configs = [];
-    fs.readdirSync('./data/nginx-configs').forEach(file => {
+    fs.readdirSync('/home/data/nginx-configs/http/').forEach(file => {
+        configs.push(file);
+    });
+    return configs;
+}
+
+function getAllTcpConfigs(){
+    let configs = [];
+    fs.readdirSync('/home/data/nginx-configs/tcp/').forEach(file => {
         configs.push(file);
     });
     return configs;
@@ -19,14 +25,21 @@ nginx.get('/', function (req, res) {
 
 nginx.get('/config', function (req, res) {
     let httpConfigs = getAllHttpConfigs();
-    res.sendStatus(200)
+    console.log(httpConfigs);
+    let jsonReply = {};
+    jsonReply[('http')]= [];
+    jsonReply['tcp']= [];
+    for (let i = 0; i < httpConfigs.length; i++) {
+        jsonReply[('http')].push(httpConfigs[i])
+    }
+    res.status(200).json(jsonReply)
 });
 
 nginx.get('/config/:name', function (req, res) {
     let name = req.params.name;
     let httpConfigs = getAllHttpConfigs();
     if (httpConfigs.includes("http-"+name+".conf")){
-        NginxConfFile.create('./data/nginx-configs/http-'+name+'.conf', function(err, conf) {
+        NginxConfFile.create('/home/data/nginx-configs/http/http-'+name+'.conf', function(err, conf) {
             if (!err) {
                 res.status(200).json({config: conf.nginx._getString()})
             } else {
@@ -42,12 +55,12 @@ nginx.get('/config/:name', function (req, res) {
 nginx.post('/new', function (req, res) {
     let {name, target, tcpPort} = req.body;
     if (name !== undefined || target !== undefined){
-        fs.writeFile('./data/nginx-configs/http-'+name+'.conf', '', function (err) {
+        fs.writeFileSync('/home/data/nginx-configs/http/http-'+name+'.conf', '', function (err) {
            if (err){
                res.status(500).json({response: "Couldn't create config file."})
            }
         });
-        NginxConfFile.create('./data/nginx-configs/http-'+name+'.conf', function(err, conf) {
+        NginxConfFile.create('/home/data/nginx-configs/http/http-'+name+'.conf', function(err, conf) {
             if (!err) {
                 conf.nginx._add('server');
                 conf.nginx.server._add('listen', '80');
@@ -55,8 +68,8 @@ nginx.post('/new', function (req, res) {
                 conf.nginx.server._add('location', '/');
                 conf.nginx.server.location._add('proxy_pass', 'http://'+target);
                 conf.flush();
-                exec('sudo /etc/init.d/nginx reload', (err, stdout, stderr) => {
-                    res.sendStatus(200)
+                exec('nginx -s reload', (err, stdout, stderr) => {
+                    res.status(200).json({response: 'Created http-'+name+'.conf and reloaded nginx'})
                 });
             } else {
                 console.log(err);
