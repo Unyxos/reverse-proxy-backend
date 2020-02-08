@@ -6,17 +6,23 @@ const bodyParser = require('body-parser');
 const lowdb = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
 global.shortid = require('shortid');
+const multer = require('multer');
+const upload = multer();
+const fs = require('fs');
 
-var multer = require('multer');
-var upload = multer();
-
-const adapter = new FileSync('db.json');
+let mandatoryDirs = ['data', 'data/certs', 'data/nginx-configs', 'data/nginx-configs/http', 'data/nginx-configs/tcp'];
+for (let i = 0; i < mandatoryDirs.length; i++) {
+    if (!fs.existsSync('/home/'+mandatoryDirs[i])){
+        fs.mkdirSync('/home/'+mandatoryDirs[i]);
+    }
+}
+const adapter = new FileSync('/home/data/db.json');
 global.db = lowdb(adapter);
 
 db.defaults({domains: [], subdomains: [], certs: []}).write();
 
-const cfEmail = process.env.CLOUDFLARE_EMAIL;
-const cfApiKey = process.env.CLOUDFLARE_API_KEY;
+const cfEmail = process.env.CF_Email;
+const cfApiKey = process.env.CF_Key;
 
 global.cfInstance = axios.create({
     headers : {
@@ -31,10 +37,10 @@ global.cfInstance = axios.create({
     }
 });
 
-const nginxRouter = require('./modules/nginx');
-const leRouter = require('./modules/letsencrypt');
-const subdomainsRouter = require('./modules/subdomains');
-const domainsRouter = require('./modules/domains');
+const nginxRouter = require('/home/modules/nginx');
+const leRouter = require('/home/modules/letsencrypt');
+const subdomainsRouter = require('/home/modules/subdomains');
+const domainsRouter = require('/home/modules/domains');
 
 const getDurationInMilliseconds = (start) => {
     const NS_PER_SEC = 1e9;

@@ -1,5 +1,5 @@
 .idea
-db.json
+data
 # Logs
 logs
 *.log
