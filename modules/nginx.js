@@ -65,6 +65,8 @@ nginx.post('/new', function (req, res) {
                 conf.nginx._add('server');
                 conf.nginx.server._add('listen', '80');
                 conf.nginx.server._add('server_name', name);
+                conf.nginx.server._add('access_log', '/var/log/nginx/http-' + name + '-access.log  main');
+                conf.nginx.server._add('error_log', '/var/log/nginx/http-' + name + '-error.log');
                 conf.nginx.server._add('location', '/');
                 conf.nginx.server.location._add('proxy_pass', 'http://'+target);
                 conf.flush();
