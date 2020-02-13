@@ -54,22 +54,30 @@ nginx.get('/config/:name', function (req, res) {
 nginx.post('/add_ssl', function (req, res) {
     let {forceSsl, configName, certName} = req.body;
     if (forceSsl !== undefined && configName !== undefined && certName !== undefined){
-        res.sendStatus(200);
         let httpConfigs = getAllHttpConfigs();
         if (httpConfigs.includes("http-"+configName+".conf")){
             if (db.get('certs').find({covered_domain: certName}).value() !== undefined){
                 let certInfo = db.get('certs').find({covered_domain: certName}).value();
                 NginxConfFile.create('/home/data/nginx-configs/http/http-'+configName+'.conf', function(err, conf) {
-                    console.log(err)
                     if (!err) {
-                        conf.nginx.server._add('listen', '443 ssl');
-                        conf.nginx.server._add('ssl_certificate', '/home/data/certs/' + certInfo['dirName'] + '/cert.cer');
-                        conf.nginx.server._add('ssl_certificate_key', '/home/data/certs/' + certInfo['dirName'] + '/key.cer');
-                        conf.nginx.server._add('ssl_protocols', 'TLSv1 TLSv1.1 TLSv1.2');
-                        conf.nginx.server._add('ssl_ciphers', 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH');
                         if (forceSsl === 'true'){
                             conf.nginx.server._add('return', '301 https://$server_name$request_uri');
                         }
+                        let target = conf.nginx.server.location.proxy_pass._value;
+
+                        conf.nginx._add('server');
+                        conf.nginx.server[1]._add('listen', '443 ssl');
+                        conf.nginx.server[1]._add('server_name', configName);
+                        conf.nginx.server[1]._add('ssl_certificate', '/home/data/certs/' + certInfo['dirName'] + '/cert.cer');
+                        conf.nginx.server[1]._add('ssl_certificate_key', '/home/data/certs/' + certInfo['dirName'] + '/key.cer');
+                        conf.nginx.server[1]._add('ssl_protocols', 'TLSv1 TLSv1.1 TLSv1.2');
+                        conf.nginx.server[1]._add('ssl_ciphers', 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH');
+                        conf.nginx.server[1]._add('access_log', '/var/log/nginx/http-' + configName + '-access.log  main');
+                        conf.nginx.server[1]._add('error_log', '/var/log/nginx/http-' + configName + '-error.log');
+                        conf.nginx.server[1]._add('proxy_set_header', 'X-Forwarded-For $remote_addr');
+                        conf.nginx.server[1]._add('location', '/');
+                        conf.nginx.server[1].location._add('proxy_pass', target);
+
                         conf.flush();
                         exec('nginx -s reload', (err, stdout, stderr) => {
                             res.status(200).json({response: 'Added ' + certName + ' certs to http-'+configName+'.conf and reloaded nginx'})
