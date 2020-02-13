@@ -58,7 +58,7 @@ subdomains.post('/refresh', function (req, res) {
 subdomains.post('/new', function (req, res) {
     let name = req.body.name, target = req.body.target, type = req.body.type;
     if (name !== undefined || target !== undefined || type !== undefined){
-        if (db.get('subdomains').find({subdomain: name, }).value() === undefined){
+        if (db.get('subdomains').find({subdomain: name}).value() === undefined){
             let domainSplit = name.split("."), domainName = (domainSplit[domainSplit.length-2]+"."+domainSplit[(domainSplit.length-1)]);
             if (db.get('domains').find({domain: domainName}).value() !== undefined){
                 let zoneId = db.get('domains').find({domain: domainName}).value()['domain_id'];
