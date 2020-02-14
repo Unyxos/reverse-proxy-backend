@@ -1,13 +1,13 @@
 const letsencrypt = require('express').Router();
 const { exec } = require('child_process');
 const fs = require('fs');
-const { Certificate, PrivateKey } = require('@fidm/x509')
+const { Certificate } = require('@fidm/x509');
 
 var rmDir = function(dir, rmSelf) {
     var files;
     rmSelf = (rmSelf === undefined) ? true : rmSelf;
     dir = dir + "/";
-    try { files = fs.readdirSync(dir); } catch (e) { console.log("!Oops, directory not exist."); return; }
+    try { files = fs.readdirSync(dir); } catch (e) { return; }
     if (files.length > 0) {
         files.forEach(function(x, i) {
             if (fs.statSync(dir + x).isDirectory()) {
@@ -18,14 +18,19 @@ var rmDir = function(dir, rmSelf) {
         });
     }
     if (rmSelf) {
-        // check if user want to delete the directory ir just the files in this directory
         fs.rmdirSync(dir);
     }
-}
+};
 
 letsencrypt.get('/', function (req, res) {
-    //const cert = Certificate.fromPEM(fs.readFileSync('/home/data/certs/shiba.wtf/cert.cer'));
-    res.sendStatus(200)
+    let certs = db.get('certs').value();
+    let jsonReply = {};
+    for (let i = 0; i < certs.length; i++) {
+        let cert = Certificate.fromPEM(fs.readFileSync('/home/data/certs/' + [certs[i]['dirName']] + '/cert.cer'));
+        jsonReply[certs[i]['covered_domain']] = [];
+        jsonReply[certs[i]['covered_domain']].push({id: certs[i]['id'], parentDomainId: certs[i]['parentDomainId'], validFrom: Date.parse(cert['validFrom']), validTo: Date.parse(cert['validTo'])});
+    }
+    res.status(200).json(jsonReply);
 });
 
 letsencrypt.post('/new', function (req, res) {
@@ -40,8 +45,7 @@ letsencrypt.post('/new', function (req, res) {
         }
         if (!fs.existsSync('/home/data/certs/'+dirName)){
             fs.mkdirSync('/home/data/certs/'+dirName);
-            exec('acme.sh --force --issue --staging --dns dns_cf --standalone -d ' + domain + ' --cert-file /home/data/certs/' + dirName + '/cert.cer --key-file /home/data/certs/' + dirName + '/key.cer --ca-file /home/data/certs/' + dirName + '/ca.cer --fullchain-file /home/data/certs/' + dirName + '/fullchain.cer', (err, stdout, stderr) => {
-                console.log(fs.readdirSync('/home/data/certs/'+dirName));
+            exec('acme.sh --staging --force --issue --dns dns_cf --standalone -d ' + domain + ' --cert-file /home/data/certs/' + dirName + '/cert.cer --key-file /home/data/certs/' + dirName + '/key.cer --ca-file /home/data/certs/' + dirName + '/ca.cer --fullchain-file /home/data/certs/' + dirName + '/fullchain.cer', (err, stdout, stderr) => {
                 if (fs.readdirSync('/home/data/certs/'+dirName) !== 0) {
                     if (db.get('certs').find({covered_domain : domain}).value() !== undefined){
                         db.get('certs').remove({covered_domain : domain}).write();
@@ -52,9 +56,7 @@ letsencrypt.post('/new', function (req, res) {
                         id: shortid(),
                         parentDomainId : parentDomainId,
                         dirName : dirName,
-                        covered_domain : domain,
-                        validFrom: Date.parse(cert['validFrom']),
-                        validTo: Date.parse(cert['validTo'])
+                        covered_domain : domain
                     }).write();
                     res.status(200).json({response: "Successfully created certificate for " + domain});
                 } else {

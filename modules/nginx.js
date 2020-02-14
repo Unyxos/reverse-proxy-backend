@@ -20,10 +20,6 @@ function getAllTcpConfigs(){
 }
 
 nginx.get('/', function (req, res) {
-    res.status(200).send("OK")
-});
-
-nginx.get('/config', function (req, res) {
     let httpConfigs = getAllHttpConfigs();
     let jsonReply = {};
     jsonReply[('http')]= [];
@@ -42,7 +38,6 @@ nginx.get('/config/:name', function (req, res) {
             if (!err) {
                 res.status(200).json({config: conf.nginx._getString()})
             } else {
-                console.log(err);
                 res.status(500).json({response: "Internal server error."})
             }
         });
@@ -74,9 +69,11 @@ nginx.post('/add_ssl', function (req, res) {
                         conf.nginx.server[1]._add('ssl_ciphers', 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH');
                         conf.nginx.server[1]._add('access_log', '/var/log/nginx/http-' + configName + '-access.log  main');
                         conf.nginx.server[1]._add('error_log', '/var/log/nginx/http-' + configName + '-error.log');
-                        conf.nginx.server[1]._add('proxy_set_header', 'X-Forwarded-For $remote_addr');
                         conf.nginx.server[1]._add('location', '/');
                         conf.nginx.server[1].location._add('proxy_pass', target);
+                        conf.nginx.server[1].location._add('proxy_buffering', 'off');
+                        conf.nginx.server[1].location._add('proxy_set_header', 'X-Forwarded-For $remote_addr');
+                        conf.nginx.server[1].location._add('proxy_set_header', 'X-Real-IP $remote_addr');
 
                         conf.flush();
                         exec('nginx -s reload', (err, stdout, stderr) => {
@@ -112,9 +109,11 @@ nginx.post('/new', function (req, res) {
                 conf.nginx.server._add('server_name', name);
                 conf.nginx.server._add('access_log', '/var/log/nginx/http-' + name + '-access.log  main');
                 conf.nginx.server._add('error_log', '/var/log/nginx/http-' + name + '-error.log');
-                conf.nginx.server._add('proxy_set_header', 'X-Forwarded-For $remote_addr');
                 conf.nginx.server._add('location', '/');
                 conf.nginx.server.location._add('proxy_pass', 'http://'+target);
+                conf.nginx.server.location._add('proxy_buffering', 'off');
+                conf.nginx.server.location._add('proxy_set_header', 'X-Forwarded-For $remote_addr');
+                conf.nginx.server.location._add('proxy_set_header', 'X-Real-IP $remote_addr');
                 conf.flush();
                 exec('nginx -s reload', (err, stdout, stderr) => {
                     res.status(200).json({response: 'Created http-'+name+'.conf and reloaded nginx'})
