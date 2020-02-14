@@ -52,7 +52,7 @@ subdomains.get('/list/:domain', function (req, res) {
 
 subdomains.post('/refresh', function (req, res) {
     refreshSubdomains();
-    res.sendStatus(200)
+    res.status(200).json({reponse: "Successfully refreshed subdomains list from Cloudflare."});
 });
 
 subdomains.post('/new', function (req, res) {
@@ -69,7 +69,7 @@ subdomains.post('/new', function (req, res) {
                 }).then(function (response) {
                     refreshSubdomains();
                 });
-                res.status(200).json({response: "Subdomain added"});
+                res.status(200).json({response: "Subdomain added."});
             } else {
                 res.status(400).json({response: "Unknown domain name."});
             }
