@@ -45,7 +45,13 @@ letsencrypt.post('/new', function (req, res) {
         }
         if (!fs.existsSync('/home/data/certs/'+dirName)){
             fs.mkdirSync('/home/data/certs/'+dirName);
-            exec('acme.sh --staging --force --issue --dns dns_cf --standalone -d ' + domain + ' --cert-file /home/data/certs/' + dirName + '/cert.cer --key-file /home/data/certs/' + dirName + '/key.cer --ca-file /home/data/certs/' + dirName + '/ca.cer --fullchain-file /home/data/certs/' + dirName + '/fullchain.cer', (err, stdout, stderr) => {
+            let command;
+            if (leServer === "LIVE"){
+                command = 'acme.sh --force --issue --dns dns_cf --standalone -d ' + domain + ' --cert-file /home/data/certs/' + dirName + '/cert.cer --key-file /home/data/certs/' + dirName + '/key.cer --ca-file /home/data/certs/' + dirName + '/ca.cer --fullchain-file /home/data/certs/' + dirName + '/fullchain.cer'
+            } else if (leServer === "STAGING"){
+                command = 'acme.sh --staging --force --issue --dns dns_cf --standalone -d ' + domain + ' --cert-file /home/data/certs/' + dirName + '/cert.cer --key-file /home/data/certs/' + dirName + '/key.cer --ca-file /home/data/certs/' + dirName + '/ca.cer --fullchain-file /home/data/certs/' + dirName + '/fullchain.cer'
+            }
+            exec(command, (err, stdout, stderr) => {
                 if (fs.readdirSync('/home/data/certs/'+dirName) !== 0) {
                     if (db.get('certs').find({covered_domain : domain}).value() !== undefined){
                         db.get('certs').remove({covered_domain : domain}).write();

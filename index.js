@@ -34,6 +34,7 @@ db.defaults({domains: [], subdomains: [], certs: []}).write();
 
 const cfEmail = process.env.CF_Email;
 const cfApiKey = process.env.CF_Key;
+global.leServer = process.env.LE_Server;
 
 global.cfInstance = axios.create({
     headers : {
