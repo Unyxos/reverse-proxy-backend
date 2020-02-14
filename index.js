@@ -9,8 +9,19 @@ global.shortid = require('shortid');
 const multer = require('multer');
 const upload = multer();
 const fs = require('fs');
+const morgan = require("morgan");
+let rfs = require('rotating-file-stream');
+const compression = require("compression");
 
-let mandatoryDirs = ['data', 'data/certs', 'data/nginx-configs', 'data/nginx-configs/http', 'data/nginx-configs/tcp'];
+let mandatoryDirs = ['data', 'data/logs', 'data/certs', 'data/nginx-configs', 'data/nginx-configs/http', 'data/nginx-configs/tcp'];
+let logDirectory = '/home/data/logs';
+
+let accessLogStream = rfs.createStream('api-access.log', {
+    interval: '7d',
+    path: logDirectory,
+    compress: "gzip"
+});
+
 for (let i = 0; i < mandatoryDirs.length; i++) {
     if (!fs.existsSync('/home/'+mandatoryDirs[i])){
         fs.mkdirSync('/home/'+mandatoryDirs[i]);
@@ -42,26 +53,11 @@ const leRouter = require('/home/modules/letsencrypt');
 const subdomainsRouter = require('/home/modules/subdomains');
 const domainsRouter = require('/home/modules/domains');
 
-const getDurationInMilliseconds = (start) => {
-    const NS_PER_SEC = 1e9;
-    const NS_TO_MS = 1e6;
-    const diff = process.hrtime(start);
-
-    return (diff[0] * NS_PER_SEC + diff[1]) / NS_TO_MS;
-};
-
-app.use(bodyParser.json());       // to support JSON-encoded bodies
+app.use(morgan('common', { stream: accessLogStream }));
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(upload.array());
-
-app.use((req, res, next) => {
-    const start = process.hrtime();
-    res.on('finish', () => {
-        const durationInMilliseconds = getDurationInMilliseconds (start);
-        console.log(`${req.ip} -> [${req.method}] ${res.statusCode} ${req.originalUrl} ${durationInMilliseconds .toLocaleString()} ms`);
-    });
-    next();
-});
+app.use(compression());
 
 app.get('/', function (req, res){
     res.json({status: 1})
