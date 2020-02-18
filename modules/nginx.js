@@ -72,7 +72,9 @@ nginx.post('/add_ssl', function (req, res) {
                         conf.nginx.server[1]._add('location', '/');
                         conf.nginx.server[1].location._add('proxy_pass', target);
                         conf.nginx.server[1].location._add('proxy_buffering', 'off');
+                        conf.nginx.server[1].location._add('proxy_set_header', 'Host $host');
                         conf.nginx.server[1].location._add('proxy_set_header', 'X-Forwarded-For $remote_addr');
+                        conf.nginx.server[1].location._add('proxy_set_header', 'X-Forwarded-Proto $scheme');
                         conf.nginx.server[1].location._add('proxy_set_header', 'X-Real-IP $remote_addr');
 
                         conf.flush();
@@ -112,7 +114,9 @@ nginx.post('/new', function (req, res) {
                 conf.nginx.server._add('location', '/');
                 conf.nginx.server.location._add('proxy_pass', 'http://'+target);
                 conf.nginx.server.location._add('proxy_buffering', 'off');
+                conf.nginx.server.location._add('proxy_set_header', 'Host $host');
                 conf.nginx.server.location._add('proxy_set_header', 'X-Forwarded-For $remote_addr');
+                conf.nginx.server.location._add('proxy_set_header', 'X-Forwarded-Proto $scheme');
                 conf.nginx.server.location._add('proxy_set_header', 'X-Real-IP $remote_addr');
                 conf.flush();
                 exec('nginx -s reload', (err, stdout, stderr) => {
