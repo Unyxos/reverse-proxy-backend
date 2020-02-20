@@ -63,7 +63,7 @@ nginx.post('/add_ssl', function (req, res) {
                         conf.nginx._add('server');
                         conf.nginx.server[1]._add('listen', '443 ssl');
                         conf.nginx.server[1]._add('server_name', configName);
-                        conf.nginx.server[1]._add('ssl_certificate', '/home/data/certs/' + certInfo['dirName'] + '/cert.cer');
+                        conf.nginx.server[1]._add('ssl_certificate', '/home/data/certs/' + certInfo['dirName'] + '/fullchain.cer');
                         conf.nginx.server[1]._add('ssl_certificate_key', '/home/data/certs/' + certInfo['dirName'] + '/key.cer');
                         conf.nginx.server[1]._add('ssl_protocols', 'TLSv1 TLSv1.1 TLSv1.2');
                         conf.nginx.server[1]._add('ssl_ciphers', 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH');
