@@ -1,0 +1,32 @@
+stages:
+  - build
+  - deploy
+
+build:
+  only:
+    - master
+  image: docker:latest
+  stage: build
+  services:
+    - docker:dind
+  
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  
+  script:
+    - docker build -t registry.corentincloss.fr/corentincl/reverse-proxy-backend:latest -t registry.corentincloss.fr/corentincl/reverse-proxy-backend:$CI_COMMIT_SHORT_SHA .
+    - docker push registry.corentincloss.fr/corentincl/reverse-proxy-backend
+  tags:
+    - docker-runner
+
+deploy:
+  only:
+    - master
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker stop rp-backend
+    - docker rm rp-backend
+    - docker run -d --name rp-backend -e CF_Email=corentin.closs@gmail.com -e CF_Key=$CF_TOKEN -e LE_Server=LIVE -v /mnt/rp-data:/home/data -v /mnt/rp-logs:/var/log/nginx -p 80:80 -p 443:443 -p 3000:3000 rp-backend:$CI_COMMIT_SHORT_SHA
+  tags:
+    - docker-shell
