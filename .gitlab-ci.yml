@@ -7,7 +7,6 @@ build:
   only:
     - master
   image: docker:latest
-  stage: build
   services:
     - docker:dind
   
@@ -30,6 +29,6 @@ deploy:
     - docker pull registry.corentincloss.fr/corentincl/reverse-proxy-backend:$CI_COMMIT_SHORT_SHA
     - docker stop rp-backend
     - docker rm rp-backend
-    - docker run -d --name rp-backend -e CF_Email=CF_EMAIL -e CF_Key=$CF_TOKEN -e LE_Server=LE_SERVER -v /mnt/rp-data:/home/data -v /mnt/rp-logs:/var/log/nginx -p 80:80 -p 443:443 -p 3000:3000 registry.corentincloss.fr/corentincl/reverse-proxy-backend:$CI_COMMIT_SHORT_SHA
+    - docker run -d --name rp-backend -e CF_Email=$CF_EMAIL -e CF_Key=$CF_TOKEN -e LE_Server=$LE_SERVER -v /mnt/rp-data:/home/data -v /mnt/rp-logs:/var/log/nginx -p 80:80 -p 443:443 -p 3000:3000 registry.corentincloss.fr/corentincl/reverse-proxy-backend:$CI_COMMIT_SHORT_SHA
   tags:
     - docker-shell
