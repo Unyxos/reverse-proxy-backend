@@ -3,6 +3,7 @@ stages:
   - deploy
 
 build:
+  stage: build
   only:
     - master
   image: docker:latest
@@ -20,6 +21,7 @@ build:
     - docker-runner
 
 deploy:
+  stage: deploy
   only:
     - master
   before_script:
